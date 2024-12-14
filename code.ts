@@ -49,7 +49,7 @@ figma.ui.onmessage = async(pluginMessage: {type: string, targetUrl: string, targ
 
   // Make sure to close the plugin when you're done. Otherwise the plugin will
   // keep running, which shows the cancel button at the bottom of the screen.
-  figma.closePlugin();
+  figma.closePlugin('Data sent successfully');
 };
 
 async function postData(url: string, token: string, data:SubmitData) {

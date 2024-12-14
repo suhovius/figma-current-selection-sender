@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/thomas-lowry/figma-plugin-ds/dist/figma-plugin-ds.css">
+
+<style>
+  body {
+    padding: 2em;
+  }
+  div {
+    margin: 1em;
+  }
+  input {
+    display: block;
+  }
+</style>
+
+<h1>Current Selection Sender</h1>
+
+<div>
+  <label for="target_url">Target Url</label>
+  <input class="input__field" type="text" id="target_url">
+
+  <label for="target_token">Target Token</label>
+  <input class="input__field" type="text" id="target_token">
+</div>
+
+<div>
+  <button class="button button--primary" id="submit-current-selection">Submit</button>
+</div>
+
+<script>
+
+document.getElementById('submit-current-selection').onclick = () => {
+  const targetUrl = document.getElementById('target_url').value;
+  const targetToken = document.getElementById('target_token').value;
+
+  parent.postMessage({ pluginMessage: { type: 'submit-current-selection', targetUrl, targetToken } }, '*')
+}
+
+</script>

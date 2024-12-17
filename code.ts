@@ -20,7 +20,7 @@ interface ImageDatum {
 interface SubmitData  {
   eventType: string;
   fileKey: string | undefined;
-  images: Array<ImageDatum>;
+  imageData: Array<ImageDatum>;
 }
 
 // Calls to "parent.postMessage" from within the HTML page will trigger this
@@ -50,7 +50,7 @@ figma.ui.onmessage = async(pluginMessage: {type: string, targetUrl: string, targ
     let data:SubmitData = {
       eventType: pluginMessage.type,
       fileKey: figma.fileKey,
-      images: imageData
+      imageData: imageData
     };
 
     const url = pluginMessage.targetUrl;
@@ -85,7 +85,8 @@ async function postData(url: string, token: string, data:SubmitData) {
       return result;
     }
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error: ', error);
+    figma.closePlugin('Sorry, something went wrong!');
   }
 }
 

@@ -1,6 +1,6 @@
 # current-selection-sender
 
-This plugin will send selected elements to the provided URL as json data
+This plugin will send selected Image elements to the provided URL as json data
 
 # Instructions
 

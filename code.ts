@@ -10,10 +10,17 @@ figma.showUI(__html__);
 
 figma.ui.resize(500, 500);
 
+interface ImageDatum {
+  id: string;
+  name: string;
+  contentType: string;
+  base64Image: string;
+}
+
 interface SubmitData  {
   eventType: string;
-  fileKey: string | undefined;  
-  nodeIds: Array<string>;
+  fileKey: string | undefined;
+  images: Array<ImageDatum>;
 }
 
 // Calls to "parent.postMessage" from within the HTML page will trigger this
@@ -29,21 +36,26 @@ figma.ui.onmessage = async(pluginMessage: {type: string, targetUrl: string, targ
       figma.closePlugin('Please select at least one element');
     }
 
-    let nodeIds: Array<string> = [];
-    
+    let imageData: Array<ImageDatum> = [];
+
     for (const node of nodes) {
-      nodeIds.push(node.id);
+      let imageDatum = await processImage(node);
+      if (imageDatum !== undefined) {
+        imageData.push(imageDatum)
+      } else {
+        figma.closePlugin('ImageDatum not found');
+      }
     }
 
     let data:SubmitData = {
       eventType: pluginMessage.type,
       fileKey: figma.fileKey,
-      nodeIds: nodeIds
+      images: imageData
     };
 
     const url = pluginMessage.targetUrl;
     const token = pluginMessage.targetToken;
-  
+
     await postData(url, token, data);
   }
 
@@ -75,4 +87,79 @@ async function postData(url: string, token: string, data:SubmitData) {
   } catch (error) {
     console.error('Error:', error);
   }
+}
+
+async function processImage(node: any) {
+  console.log("Selected Node:", node);
+
+  if (node.fills && Array.isArray(node.fills)) {
+      const fill = node.fills[0];
+
+      if (!fill) {
+        figma.notify("Selected node does not contain image fills.");
+        return;
+      }
+
+      if (fill.type === "IMAGE" && fill.imageHash) {
+          try {
+              const image = figma.getImageByHash(fill.imageHash)
+
+              if (!image) {
+                figma.notify("Image not found.");
+                return;
+              }
+
+              // Get image bytes
+              const imageBytes = await image.getBytesAsync();
+
+              // Determine content type
+              const contentType = getImageContentType(imageBytes);
+              if (!contentType) {
+                  figma.notify("Unknown image type.");
+                  return;
+              }
+              // Convert to Base64
+              const base64String = arrayBufferToBase64(imageBytes);
+              // Send or use the Base64 string
+
+              let iamgeData:ImageDatum = {
+                id: node.id,
+                name: node.name,
+                contentType: contentType,
+                base64Image: base64String
+              }
+
+              return iamgeData
+          } catch (error) {
+              console.error("Error reading image:", error);
+          }
+      } else {
+          figma.notify("Selected rectangle does not contain an image fill.");
+      }
+  } else {
+      figma.notify("Selected rectangle does not contain fills.");
+  }
+}
+
+function getImageContentType(bytes: ArrayBuffer): string | null {
+  const header = new Uint8Array(bytes).subarray(0, 4); // First 4 bytes
+  const hexHeader = Array.from(header)
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("");
+
+  // Match against known magic numbers
+  if (hexHeader.startsWith("89504e47")) {
+      return "image/png";
+  } else if (hexHeader.startsWith("ffd8")) {
+      return "image/jpeg";
+  } else if (hexHeader.startsWith("474946")) {
+      return "image/gif";
+  }
+  return null; // Unknown type
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  return figma.base64Encode(bytes)
 }
